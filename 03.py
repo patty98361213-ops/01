@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
 
-# 🚨 必須放在最頂層！確保這是第一個被執行的 Streamlit 指令，防止白屏崩潰
-st.set_page_config(page_title="精品美妝 & 包款複合式優惠計算器", page_icon="🛍️", layout="wide")
+# 🚨 關鍵修正：加上 initial_sidebar_state="collapsed" 強制隱藏側邊欄，讓畫面 100% 滿版！
+st.set_page_config(
+    page_title="精品美妝 & 包款複合式優惠計算器", 
+    page_icon="🛍️", 
+    layout="wide",
+    initial_sidebar_state="collapsed" 
+)
 
 from itertools import combinations
 from functools import lru_cache
@@ -296,9 +301,9 @@ def main():
     for p in PRICES: 
         st.session_state.setdefault(f"qty_{p}", 0)
 
-    # 🧹 側邊欄：已將優惠介紹移除，僅保留系統控制功能
-    with st.sidebar:
-        st.header("⚙️ 系統控制")
+    # 🧹 控制區：清空按鈕直接放在主畫面右上方
+    col_space, col_btn = st.columns([5, 1])
+    with col_btn:
         if st.button("🔄 快速清空購物車", use_container_width=True):
             for p in PRICES: st.session_state[f"qty_{p}"] = 0
             st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
