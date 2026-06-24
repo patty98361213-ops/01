@@ -14,7 +14,7 @@ from functools import lru_cache
 from collections import Counter
 
 # -----------------------------
-# 商品資料庫 (已更名並新增馬鞍包)
+# 商品資料庫
 # -----------------------------
 PRICES = {
     "潔顏露": 480, "前導水": 580, "富勒烯": 1080, "滲透精華": 1080, 
@@ -86,9 +86,10 @@ def apply_combos(cart_tuple):
     for p, q in cart.items():
         best_price += PRICES[p] * q
         
+    # ✨ 關鍵優化：若有剩餘未配對商品，直接在此展開個別的原價明細
     best_plan = []
     if best_price > 0:
-        best_plan = [("原價購買", best_price)]
+        best_plan = [(f"{p} × {q} (原價)", PRICES[p] * q) for p, q in cart.items() if q > 0]
     
     # 1. 檢查大套組優惠
     for s, price in BIG_SETS.items():
@@ -301,7 +302,7 @@ def main():
     for p in PRICES: 
         st.session_state.setdefault(f"qty_{p}", 0)
 
-    # 主畫面頂部控制區：清空按鈕固定在右側
+    # 主畫面頂部控制區
     col_space, col_btn = st.columns([5, 1])
     with col_btn:
         if st.button("🔄 快速清空購物車", use_container_width=True):
@@ -361,12 +362,13 @@ def main():
             
             with st.container(border=True):
                 st.markdown("### 🎯 最佳優惠搭配組合方案")
-                display_plan = [f"✅ {name} → `NT${price:,}`" for name, price in plan if price > 0 or name != "原價購買"]
+                # ✨ 這裡簡化過濾條件，只要大於 0 元的項目（不論是折扣組合還是原價單品）都完整呈現
+                display_plan = [f"✅ {name} → `NT${price:,}`" for name, price in plan if price > 0]
                 if display_plan:
                     for item in display_plan:
                         st.markdown(item)
                 else:
-                    st.markdown("• 本單查無適用組合，皆以最優惠原價計算。")
+                    st.markdown("• 本單查無適用組合。")
 
 if __name__ == "__main__":
     main()
