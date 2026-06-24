@@ -2,7 +2,7 @@
 import streamlit as st
 
 # 🚨 必須放在最頂層！確保這是第一個被執行的 Streamlit 指令，防止白屏崩潰
-st.set_page_config(page_title="MURFEELI優惠計算器", page_icon="🛍️", layout="wide")
+st.set_page_config(page_title="精品美妝 & 包款複合式優惠計算器", page_icon="🛍️", layout="wide")
 
 from itertools import combinations
 from functools import lru_cache
@@ -327,7 +327,7 @@ def main():
             with cols[idx % 3]:
                 with st.container(border=True):
                     st.markdown(f"**{p}**")
-                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_content_type=False) # 改為一般 text
+                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_allow_html=True)
                     st.number_input("數量", min_value=0, step=1, key=f"qty_{p}", label_visibility="collapsed")
 
     with tab_bag:
@@ -337,7 +337,7 @@ def main():
             with cols[idx % 3]:
                 with st.container(border=True):
                     st.markdown(f"**{p}**")
-                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_content_type=False)
+                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_allow_html=True)
                     st.number_input("數量", min_value=0, step=1, key=f"qty_{p}", label_visibility="collapsed")
 
     with tab_checkout:
