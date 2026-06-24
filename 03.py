@@ -9,6 +9,80 @@ st.set_page_config(
     initial_sidebar_state="collapsed" 
 )
 
+# -----------------------------
+# 🎨 注入法式奶油色系 CSS 外觀
+# -----------------------------
+st.markdown("""
+<style>
+    /* 全局背景與主體字體 */
+    .stApp {
+        background-color: #FDFBF7 !important;
+        color: #4A3E3D !important;
+    }
+    
+    /* 標題與副標題色調 */
+    h1 {
+        color: #8C7662 !important;
+        font-weight: 700 !important;
+    }
+    h2, h3, h4, h5, h6 {
+        color: #A08875 !important;
+    }
+    
+    /* 頂部 Tabs 標籤頁樣式 */
+    button[data-baseweb="tab"] {
+        color: #A08875 !important;
+        font-weight: 600 !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #6E5A4B !important;
+        border-bottom-color: #C6B49F !important;
+    }
+    
+    /* 數值輸入框樣式 */
+    .stNumberInput input {
+        background-color: #FFFDF9 !important;
+        color: #4A3E3D !important;
+        border-color: #E6DDD3 !important;
+    }
+    
+    /* 按鈕樣式 (快速清空) */
+    div.stButton > button {
+        background-color: #F4EFE6 !important;
+        color: #7A6555 !important;
+        border: 1px solid #DCD1C4 !important;
+        border-radius: 20px !important;
+    }
+    div.stButton > button:hover {
+        background-color: #E6DDD3 !important;
+        color: #5A4A3D !important;
+        border-color: #C6B49F !important;
+    }
+    
+    /* 區塊容器 (Border Container) 奶油化 */
+    div[data-testid="stMetric"] {
+        background-color: #F7F2E8 !important;
+        padding: 15px !important;
+        border-radius: 12px !important;
+        border: 1px solid #E6DDD3 !important;
+    }
+    
+    /* 提示框 (Alerts) 柔和化 */
+    .stAlert {
+        background-color: #F5EFE4 !important;
+        color: #6E5A4B !important;
+        border-left-color: #C6B49F !important;
+    }
+    
+    /* 明細小字卡 */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #FFFDF9 !important;
+        border: 1px solid #EAE3D5 !important;
+        border-radius: 12px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 from itertools import combinations
 from functools import lru_cache
 from collections import Counter
@@ -86,7 +160,6 @@ def apply_combos(cart_tuple):
     for p, q in cart.items():
         best_price += PRICES[p] * q
         
-    # ✨ 關鍵優化：若有剩餘未配對商品，直接在此展開個別的原價明細
     best_plan = []
     if best_price > 0:
         best_plan = [(f"{p} × {q} (原價)", PRICES[p] * q) for p, q in cart.items() if q > 0]
@@ -295,8 +368,8 @@ def apply_combos(cart_tuple):
 # UI 介面展示
 # -----------------------------
 def main():
-    st.markdown("<h1 style='text-align: center; color: #D4AF37;'>🛍️ murfeeli組合優惠計算器</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #888;'>即時精算全店最優組合優惠價</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #8C7662;'>🛍️ Murfeeli組合優惠計算器</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #A08875;'>即時精算全店最優組合優惠價</p>", unsafe_allow_html=True)
     st.write("")
 
     for p in PRICES: 
@@ -318,7 +391,7 @@ def main():
             with cols[idx % 3]:
                 with st.container(border=True):
                     st.markdown(f"**{p}**")
-                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='color: #8C7662;'>單價: NT${PRICES[p]:,}</span>", unsafe_allow_html=True)
                     st.number_input("數量", min_value=0, step=1, key=f"qty_{p}", label_visibility="collapsed")
 
     with tab_bag:
@@ -328,7 +401,7 @@ def main():
             with cols[idx % 3]:
                 with st.container(border=True):
                     st.markdown(f"**{p}**")
-                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_allow_html=True)
+                    st.markdown(f"<span style='color: #8C7662;'>單價: NT${PRICES[p]:,}</span>", unsafe_allow_html=True)
                     st.number_input("數量", min_value=0, step=1, key=f"qty_{p}", label_visibility="collapsed")
 
     with tab_checkout:
@@ -339,7 +412,7 @@ def main():
             st.warning("🛒 目前購物車空空如也，請先至前面分頁挑選商品。")
         else:
             for item, qty in cart.items():
-                st.markdown(f"🛍️ **{item}** × {qty} 件 — `NT${PRICES[item]*qty:,}`")
+                st.markdown(f"🤎 **{item}** × {qty} 件 — `NT${PRICES[item]*qty:,}`")
             
             st.markdown("---")
             
@@ -362,7 +435,6 @@ def main():
             
             with st.container(border=True):
                 st.markdown("### 🎯 最佳優惠搭配組合方案")
-                # ✨ 這裡簡化過濾條件，只要大於 0 元的項目（不論是折扣組合還是原價單品）都完整呈現
                 display_plan = [f"✅ {name} → `NT${price:,}`" for name, price in plan if price > 0]
                 if display_plan:
                     for item in display_plan:
