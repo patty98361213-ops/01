@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-保養品 + 包款組合優惠計算器（完整整合精簡版）
+保養品 + 包款組合優惠計算器（終極效能安全版）
 """
 import streamlit as st
 from itertools import combinations
 from functools import lru_cache
+from collections import Counter
 
 # -----------------------------
 # 單品價格
@@ -65,7 +66,6 @@ COMBOS = {
     ("紅蔘水", "保濕修復霜"): (1660, 1480),
 }
 
-# 折扣率排序
 COMBOS_SORTED = sorted(
     COMBOS.items(),
     key=lambda x: (x[1][0] - x[1][1]) / x[1][0],
@@ -78,21 +78,21 @@ COMBOS_SORTED = sorted(
 PACKAGE_TWO_ITEM_DISCOUNTS = [
     (["小方包"], ["短夾", "零錢夾"], 0.9),
     (["長夾", "掀蓋零錢夾", "中夾", "短夾", "零錢夾"], ["法棍包"], 0.95),
-    (["束口後背包", "經典後背包"], None, 0.95),  # 修正：改為任二規格
+    (["束口後背包", "經典後背包"], None, 0.95),  
     (["束口後背包"], ["潔顏露"], 0.9),
-    (["經典後背包"], ["潔顏露"], 1680),           # 注意：此處 1680 為固定組合價
-    (["中夾", "短夾", "零錢夾"], None, 0.95),       # 任二
+    (["經典後背包"], ["潔顏露"], 1680),           
+    (["中夾", "短夾", "零錢夾"], None, 0.95),       
     (["中夾", "短夾", "零錢夾"], ["潔顏露", "體香噴霧", "隔離"], 0.9),
-    (["長夾", "掀蓋零錢夾"], None, 0.95),           # 任二
+    (["長夾", "掀蓋零錢夾"], None, 0.95),           
     (["長夾", "掀蓋零錢夾"], ["潔顏露", "體香噴霧", "隔離"], 0.95),      
-    (["巧克包"], None, 0.95),                       # 任二
-    (["泡芙包(小)", "泡芙包(小藍)", "泡芙包(大)", "泡芙包(大藍)"], None, 0.95), # 任二
+    (["巧克包"], None, 0.95),                       
+    (["泡芙包(小)", "泡芙包(小藍)", "泡芙包(大)", "泡芙包(大藍)"], None, 0.95), 
     (["泡芙包(小)", "泡芙包(小藍)", "泡芙包(大)", "泡芙包(大藍)"], ["潔顏露"], 0.9), 
-    (["中夾", "短夾", "零錢夾"], ["巧克包", "泡芙包(小)", "泡芙包(小藍)", "泡芙包(大)", "泡芙包(大藍)"], 0.95) # 修正全形括號
+    (["中夾", "短夾", "零錢夾"], ["巧克包", "泡芙包(小)", "泡芙包(小藍)", "泡芙包(大)", "泡芙包(大藍)"], 0.95) 
 ]
 
 # -----------------------------
-# 核心計算
+# 核心最優算法
 # -----------------------------
 def calc_original(cart):
     return sum(PRICES[p] * qty for p, qty in cart.items())
@@ -103,9 +103,10 @@ def apply_combos(cart_tuple):
     best_price = sum(PRICES[p] * q for p, q in cart.items())
     best_plan = [("原價購買", best_price)] if best_price > 0 else []
     
-    # 1. 保養品大套組
+    # 1. 保養品大套組判斷 (使用 Counter 優化精準度)
     for s, price in BIG_SETS.items():
-        if all(cart.get(i, 0) >= 1 for i in s):
+        set_counts = Counter(s)
+        if all(cart.get(k, 0) >= v for k, v in set_counts.items()):
             temp = cart.copy()
             for i in s: temp[i] -= 1
             new_price, plan = apply_combos(tuple(f"{k}:{v}" for k, v in temp.items()))
@@ -114,9 +115,10 @@ def apply_combos(cart_tuple):
                 best_price = total
                 best_plan = [(f"{'+'.join(s)} 大套組", price)] + plan
                 
-    # 2. 保養品固定組合
+    # 2. 保養品固定組合判斷 (使用 Counter 優化精準度)
     for c, (_, disc) in COMBOS_SORTED:
-        if all(cart.get(i, 0) > 0 for i in c):
+        combo_counts = Counter(c)
+        if all(cart.get(k, 0) >= v for k, v in combo_counts.items()):
             temp = cart.copy()
             for i in c: temp[i] -= 1
             new_price, plan = apply_combos(tuple(f"{k}:{v}" for k, v in temp.items()))
@@ -125,26 +127,21 @@ def apply_combos(cart_tuple):
                 best_price = total
                 best_plan = [(f"{'+'.join(c)} 組合", disc)] + plan
                 
-    # 3. 任三件9折
-    discount_groups_3 = []
+    # 建立任選群組的基礎陣列
     cosmetics = []
     for p, q in cart.items():
         if p in COSMETIC_ITEMS: cosmetics += [p] * q
-    discount_groups_3.append(cosmetics)
 
-    baguette = []
-    for p, q in cart.items():
-        if p in COSMETIC_ITEMS or p == "法棍包": baguette += [p] * q
-    discount_groups_3.append(baguette)
+    baguette = list(cosmetics)
+    if "法棍包" in cart: baguette += ["法棍包"] * cart["法棍包"]
 
-    puff = []
-    for p, q in cart.items():
-        if p in COSMETIC_ITEMS or p == "泡芙肩背包": puff += [p] * q
-    discount_groups_3.append(puff)
+    puff = list(cosmetics)
+    if "泡芙肩背包" in cart: puff += ["泡芙肩背包"] * cart["泡芙肩背包"]
 
-    for items in discount_groups_3:
+    # 3. 任三件9折 (利用 set(combinations) 阻斷記憶體爆炸)
+    for items in [cosmetics, baguette, puff]:
         if len(items) >= 3:
-            for group in combinations(items, 3):
+            for group in set(combinations(items, 3)):
                 if "法棍包" in group and "泡芙肩背包" in group:
                     continue
                 temp = cart.copy()
@@ -163,15 +160,10 @@ def apply_combos(cart_tuple):
                     best_price = total
                     best_plan = [(f"{'+'.join(group)} 任三件9折", price)] + plan
 
-    # 4. 任兩件95折
-    discount_groups_2 = []
-    discount_groups_2.append(cosmetics)
-    discount_groups_2.append(baguette)
-    discount_groups_2.append(puff)
-
-    for items in discount_groups_2:
+    # 4. 任兩件95折 (利用 set(combinations) 阻斷記憶體爆炸)
+    for items in [cosmetics, baguette, puff]:
         if len(items) >= 2:
-            for group in combinations(items, 2):
+            for group in set(combinations(items, 2)):
                 if "法棍包" in group and "泡芙肩背包" in group:
                     continue
                 temp = cart.copy()
@@ -190,18 +182,16 @@ def apply_combos(cart_tuple):
                     best_price = total
                     best_plan = [(f"{'+'.join(group)} 任兩件95折", price)] + plan
 
-    # 5. 包款特殊折扣
+    # 5. 包款特殊組合折扣 (全面加入防重與去重優化)
     for must_items, optional_items, rate in PACKAGE_TWO_ITEM_DISCOUNTS:
         if optional_items is None:
-            # 任二折扣
             eligible = []
             for item in must_items: eligible += [item] * cart.get(item, 0)
             if len(eligible) >= 2:
-                for group in combinations(eligible, 2):
+                for group in set(combinations(eligible, 2)):
                     temp = cart.copy()
                     for g in group: temp[g] -= 1
                     
-                    # 判斷是折數還是固定價
                     price = rate if rate > 1 else int(round(sum(PRICES[g] for g in group) * rate))
                     label_desc = f"組合價${rate}" if rate > 1 else f"任兩件{int(rate*100)}折"
                     
@@ -211,51 +201,59 @@ def apply_combos(cart_tuple):
                         best_price = total
                         best_plan = [(f"{'+'.join(group)} {label_desc}(包包)", price)] + plan
         else:
-            # 任一+任一折扣
             must_eligible = []
             for item in must_items: must_eligible += [item] * cart.get(item, 0)
             optional_eligible = []
             for item in optional_items: optional_eligible += [item] * cart.get(item, 0)
             
             if must_eligible and optional_eligible:
+                processed_pairs = set()
                 for g1 in must_eligible:
                     for g2 in optional_eligible:
-                        if g1 != g2 or (g1 == g2 and must_eligible.count(g1) > 1):
-                            temp = cart.copy()
-                            temp[g1] -= 1
-                            temp[g2] -= 1
-                            
-                            # 判斷是折數還是固定價
-                            price = rate if rate > 1 else int(round((PRICES[g1] + PRICES[g2]) * rate))
-                            label_desc = f"組合價${rate}" if rate > 1 else f"{int(rate*100)}折"
-                            
-                            new_price, plan = apply_combos(tuple(f"{k}:{v}" for k, v in temp.items()))
-                            total = price + new_price
-                            if total < best_price:
-                                best_price = total
-                                best_plan = [(f"{g1}+{g2} {label_desc}(包包)", price)] + plan
+                        if g1 == g2 and must_eligible.count(g1) <= 1:
+                            continue
+                        pair = tuple(sorted([g1, g2]))
+                        if pair in processed_pairs:
+                            continue
+                        processed_pairs.add(pair)
+                        
+                        temp = cart.copy()
+                        temp[g1] -= 1
+                        temp[g2] -= 1
+                        
+                        price = rate if rate > 1 else int(round((PRICES[g1] + PRICES[g2]) * rate))
+                        label_desc = f"組合價${rate}" if rate > 1 else f"{int(rate*100)}折"
+                        
+                        new_price, plan = apply_combos(tuple(f"{k}:{v}" for k, v in temp.items()))
+                        total = price + new_price
+                        if total < best_price:
+                            best_price = total
+                            best_plan = [(f"{g1}+{g2} {label_desc}(包包)", price)] + plan
                                 
-    return best_price, best_plan  # 修正：補上最核心的回傳值
+    return best_price, best_plan
 
 # -----------------------------
-# Streamlit UI
+# Streamlit 使用者介面
 # -----------------------------
 def main():
     st.set_page_config(page_title="保養品+包包組合優惠計算器", page_icon="💄", layout="wide")
     st.title("💄 組合優惠計算器")
     
-    # 初始化 Session State
+    # 初始化
     for p in PRICES: 
         st.session_state.setdefault(f"qty_{p}", 0)
         
-    # 功能按鈕區
+    # 重設歸零按鈕 (解決舊版本 Streamlit 相容性問題)
     keys = [f"qty_{p}" for p in PRICES]
     if st.button("🔄 數量全部歸零"):
         for k in keys: 
             st.session_state[k] = 0
-        st.rerun()
+        if hasattr(st, "rerun"):
+            st.rerun()
+        else:
+            st.experimental_rerun()
         
-    # 商品選購區（乾淨的左右雙排版）
+    # 乾淨的雙欄版面配置
     col1, col2 = st.columns(2)
     with col1:
         st.header("🧴 保養品")
@@ -271,7 +269,7 @@ def main():
             
     st.markdown("---")
     
-    # 計算按鈕與結果呈現
+    # 啟動最優價格計算
     if st.button("💰 計算最優價格", type="primary"):
         cart = {p: st.session_state[f"qty_{p}"] for p in PRICES}
         if sum(cart.values()) == 0:
@@ -287,8 +285,7 @@ def main():
                 st.metric("最優價", f"NT${best:,}", delta=f"-NT${original-best:,}")
                 
             with col_res2:
-                st.subheader("🎯 最佳組合")
-                # 過濾掉無意義的 0 元原價顯示，使明細更好看
+                st.subheader("🎯 最佳組合搭配明細")
                 display_plan = [f"• {name}：NT${price:,}" for name, price in plan if price > 0 or name != "原價購買"]
                 if display_plan:
                     for item in display_plan:
@@ -296,7 +293,7 @@ def main():
                 else:
                     st.write("• 無特別優惠組合，皆以原價購買")
                     
-    with st.expander("📝 優惠規則說明"):
+    with st.expander("📝 優惠規則說明一覽"):
         st.markdown("""
         ### 保養品優惠：
         - 🎁 大套組優惠  
