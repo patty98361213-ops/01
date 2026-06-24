@@ -2,7 +2,7 @@
 import streamlit as st
 
 # 🚨 必須放在最頂層！確保這是第一個被執行的 Streamlit 指令，防止白屏崩潰
-st.set_page_config(page_title="精品美妝 & 包款複合式優惠計算器", page_icon="🛍️", layout="wide")
+st.set_page_config(page_title="MURFEELI優惠計算器", page_icon="🛍️", layout="wide")
 
 from itertools import combinations
 from functools import lru_cache
@@ -69,7 +69,6 @@ def calc_original(cart):
 
 @lru_cache(maxsize=None)
 def apply_combos(cart_tuple):
-    # 解析傳入的購物車元組
     cart = {}
     for item in cart_tuple:
         parts = item.split(":")
@@ -78,7 +77,6 @@ def apply_combos(cart_tuple):
         if v > 0:
             cart[k] = v
             
-    # 計算當前基礎價格
     best_price = 0
     for p, q in cart.items():
         best_price += PRICES[p] * q
@@ -133,7 +131,6 @@ def apply_combos(cart_tuple):
                 best_price = total
                 best_plan = [(f"{'+'.join(c)} 組合", disc)] + plan
                 
-    # 準備任選混搭的商品池
     cosmetics = []
     for p, q in cart.items():
         if p in COSMETIC_ITEMS: 
@@ -292,8 +289,8 @@ def apply_combos(cart_tuple):
 # UI 介面展示
 # -----------------------------
 def main():
-    st.markdown("<h1 style='text-align: center; color: #D4AF37;'>🛍️ 精品美妝 & 包款收銀系統</h1>", unsafe_content_type=True)
-    st.markdown("<p style='text-align: center; color: #888;'>即時精算全店最優組合優惠價</p>", unsafe_content_type=True)
+    st.markdown("<h1 style='text-align: center; color: #D4AF37;'>🛍️ 精品美妝 & 包款收銀系統</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #888;'>即時精算全店最優組合優惠價</p>", unsafe_allow_html=True)
     st.write("")
 
     for p in PRICES: 
@@ -330,7 +327,7 @@ def main():
             with cols[idx % 3]:
                 with st.container(border=True):
                     st.markdown(f"**{p}**")
-                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_content_type=True)
+                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_content_type=False) # 改為一般 text
                     st.number_input("數量", min_value=0, step=1, key=f"qty_{p}", label_visibility="collapsed")
 
     with tab_bag:
@@ -340,7 +337,7 @@ def main():
             with cols[idx % 3]:
                 with st.container(border=True):
                     st.markdown(f"**{p}**")
-                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_content_type=True)
+                    st.markdown(f"<span style='color: #888;'>單價: NT${PRICES[p]:,}</span>", unsafe_content_type=False)
                     st.number_input("數量", min_value=0, step=1, key=f"qty_{p}", label_visibility="collapsed")
 
     with tab_checkout:
@@ -357,7 +354,6 @@ def main():
             
             original = calc_original(cart)
             
-            # 將購物車轉化為不可變元組傳入計算
             cart_list = []
             for k, v in cart.items():
                 cart_list.append(f"{k}:{v}")
