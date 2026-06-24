@@ -3,7 +3,7 @@ import streamlit as st
 
 # 🚨 強制隱藏側邊欄，讓畫面 100% 滿版
 st.set_page_config(
-    page_title="精品美妝 & 包款複合式優惠計算器", 
+    page_title="murfeeli優惠計算器", 
     page_icon="🛍️", 
     layout="wide",
     initial_sidebar_state="collapsed" 
@@ -309,7 +309,7 @@ def main():
             for p in PRICES: st.session_state[f"qty_{p}"] = 0
             st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
 
-    tab_cosmetic, tab_bag, tab_checkout = st.tabs(["🧴 頂級保養品", "👜 時尚包款 / 皮夾", "🛒 結帳購物車"])
+    tab_cosmetic, tab_bag, tab_checkout = st.tabs(["🧴 保養品", "👜 包款 / 皮夾", "🛒 結帳購物車"])
 
     with tab_cosmetic:
         st.subheader("選擇保養品數量")
