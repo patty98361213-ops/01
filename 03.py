@@ -295,7 +295,7 @@ def apply_combos(cart_tuple):
 # UI 介面展示
 # -----------------------------
 def main():
-    st.markdown("<h1 style='text-align: center; color: #D4AF37;'>🛍️ 精品美妝 & 包款收銀系統</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #D4AF37;'>🛍️ murfeeli組合優惠計算器</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #888;'>即時精算全店最優組合優惠價</p>", unsafe_allow_html=True)
     st.write("")
 
