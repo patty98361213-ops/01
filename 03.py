@@ -296,27 +296,12 @@ def main():
     for p in PRICES: 
         st.session_state.setdefault(f"qty_{p}", 0)
 
+    # 🧹 側邊欄：已將優惠介紹移除，僅保留系統控制功能
     with st.sidebar:
         st.header("⚙️ 系統控制")
         if st.button("🔄 快速清空購物車", use_container_width=True):
             for p in PRICES: st.session_state[f"qty_{p}"] = 0
             st.rerun() if hasattr(st, "rerun") else st.experimental_rerun()
-            
-        st.markdown("---")
-        st.header("📜 當期優惠活動")
-        st.info("💡 **系統將自動排列組合，為顧客抓出「最省錢」的結帳方案。**")
-        with st.expander("🔍 查看詳細規則"):
-            st.markdown("""
-            **保養品專區**
-            - 任三件 9 折 (含泡芙肩背包)
-            - 任兩件 95 折
-            - 超值明星大套組/固定組合價
-            
-            **時尚包款專區**
-            - 搭配指定銀夾/短夾享 9 折起
-            - 後背包搭配潔顏露折抵價
-            - 精選包款/皮夾任兩件 95 折
-            """)
 
     tab_cosmetic, tab_bag, tab_checkout = st.tabs(["🧴 頂級保養品", "👜 時尚包款 / 皮夾", "🛒 結帳購物車"])
 
