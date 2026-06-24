@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
+
+# 🚨 必須放在最頂層！確保這是第一個被執行的 Streamlit 指令，防止白屏崩潰
+st.set_page_config(page_title="保養品+包包組合優惠計算器", page_icon="💄", layout="wide")
+
 from itertools import combinations
 from functools import lru_cache
 from collections import Counter
@@ -225,8 +229,68 @@ def apply_combos(cart_tuple):
 # Streamlit 使用者介面
 # -----------------------------
 def main():
-    st.set_page_config(page_title="保養品+包包組合優惠計算器", page_icon="💄", layout="wide")
     st.title("💄 組合優惠計算器")
     
     for p in PRICES: 
         st.session_state.setdefault(f"qty_{p}", 0)
+        
+    keys = [f"qty_{p}" for p in PRICES]
+    if st.button("🔄 數量全部歸零"):
+        for k in keys: 
+            st.session_state[k] = 0
+        if hasattr(st, "rerun"):
+            st.rerun()
+        else:
+            st.experimental_rerun()
+        
+    col1, col2 = st.columns(2)
+    with col1:
+        st.header("🧴 保養品")
+        for p in COSMETIC_ITEMS:
+            st.number_input(f"{p}", min_value=0, step=1, key=f"qty_{p}")
+            st.caption(f"單價：NT${PRICES[p]:,}")
+            
+    with col2:
+        st.header("👜 包款")
+        for p in BAG_ITEMS:
+            st.number_input(f"{p}", min_value=0, step=1, key=f"qty_{p}")
+            st.caption(f"單價：NT${PRICES[p]:,}")
+            
+    st.markdown("---")
+    
+    if st.button("💰 計算最優價格", type="primary"):
+        cart = {p: st.session_state[f"qty_{p}"] for p in PRICES}
+        if sum(cart.values()) == 0:
+            st.info("請選擇商品數量")
+        else:
+            original = calc_original(cart)
+            best, plan = apply_combos(tuple(f"{k}:{v}" for k, v in cart.items() if v > 0))
+            
+            col_res1, col_res2 = st.columns(2)
+            with col_res1:
+                st.subheader("💸 計算結果")
+                st.metric("原價", f"NT${original:,}")
+                st.metric("最優價", f"NT${best:,}", delta=f"-NT${original-best:,}")
+                
+            with col_res2:
+                st.subheader("🎯 最佳組合搭配明細")
+                display_plan = [f"• {name}：NT${price:,}" for name, price in plan if price > 0 or name != "原價購買"]
+                if display_plan:
+                    for item in display_plan:
+                        st.write(item)
+                else:
+                    st.write("• 無特別優惠組合，皆以原價購買")
+                    
+    with st.expander("📝 優惠規則說明一覽"):
+        st.markdown("""
+        ### 保養品優惠：
+        - 🎁 大套組優惠  
+        - 💝 固定組合優惠  
+        - 🛍️ 任兩件95折  
+        - 🛍️ 任三件9折（含泡芙肩背包） 
+        ### 包包優惠：
+        - 🛍️ 指定任兩件95折或9折 
+        """)
+
+if __name__ == "__main__":
+    main()
