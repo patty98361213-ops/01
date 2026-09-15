@@ -99,9 +99,14 @@ PRICES = {
 }
 
 COSMETIC_ITEMS = ["潔顏露", "前導水", "富勒烯", "滲透精華", "保濕修復霜", "體香噴霧", "隔離"]
-# 包含中夾、短夾、零錢夾 與 保養品 共同參與任2件95折/3件9折優惠
-DISCOUNT_ELIGIBLE_BASE = COSMETIC_ITEMS + ["中夾", "短夾", "零錢夾"]
 BAG_ITEMS = [p for p in PRICES if p not in COSMETIC_ITEMS]
+
+# 獨立混搭群組：每個群組各自計算「任2件95折 / 任3件9折」，互不干擾
+MIX_GROUPS = [
+    ("泡芙肩背包混搭", COSMETIC_ITEMS + ["泡芙肩背包"]),
+    ("法棍包混搭", COSMETIC_ITEMS + ["法棍包"]),
+    ("皮夾類混搭", COSMETIC_ITEMS + ["中夾", "短夾", "零錢夾"]),
+]
 
 BIG_SETS = {
     ("隔離", "潔顏露", "前導水", "富勒烯", "保濕修復霜"): 3560,
@@ -178,9 +183,7 @@ def apply_combos(cart_tuple):
             for i in s: 
                 temp[i] -= 1
             
-            temp_list = []
-            for tk, tv in temp.items():
-                temp_list.append(f"{tk}:{tv}")
+            temp_list = [f"{tk}:{tv}" for tk, tv in temp.items()]
             new_price, plan = apply_combos(tuple(temp_list))
             
             total = price + new_price
@@ -201,36 +204,23 @@ def apply_combos(cart_tuple):
             for i in c: 
                 temp[i] -= 1
                 
-            temp_list = []
-            for tk, tv in temp.items():
-                temp_list.append(f"{tk}:{tv}")
+            temp_list = [f"{tk}:{tv}" for tk, tv in temp.items()]
             new_price, plan = apply_combos(tuple(temp_list))
             
             total = disc + new_price
             if total < best_price:
                 best_price = total
                 best_plan = [(f"{'+'.join(c)} 組合", disc)] + plan
-                
-    # 建立可享有任選折扣的基礎商品池 (保養品 + 中夾/短夾/零錢夾)
-    base_eligible = []
-    for p, q in cart.items():
-        if p in DISCOUNT_ELIGIBLE_BASE: 
-            base_eligible += [p] * q
 
-    baguette = list(base_eligible)
-    if "法棍包" in cart: 
-        baguette += ["法棍包"] * cart["法棍包"]
+    # 3. 獨立群組：任三件 9 折
+    for _, group_allowed in MIX_GROUPS:
+        group_pool = []
+        for p, q in cart.items():
+            if p in group_allowed:
+                group_pool += [p] * q
 
-    puff = list(base_eligible)
-    if "泡芙肩背包" in cart: 
-        puff += ["泡芙肩背包"] * cart["泡芙肩背包"]
-
-    # 3. 任三件 9 折
-    for items in [base_eligible, baguette, puff]:
-        if len(items) >= 3:
-            for group in set(combinations(items, 3)):
-                if "法棍包" in group and "泡芙肩背包" in group: 
-                    continue
+        if len(group_pool) >= 3:
+            for group in set(combinations(group_pool, 3)):
                 temp = cart.copy()
                 valid = True
                 for g in group:
@@ -238,26 +228,29 @@ def apply_combos(cart_tuple):
                         valid = False
                         break
                     temp[g] -= 1
-                if not valid: 
+                if not valid:
                     continue
 
                 group_sum = sum(PRICES[g] for g in group)
                 price = int(round(group_sum * 0.9))
-                
+
                 temp_list = [f"{tk}:{tv}" for tk, tv in temp.items()]
                 new_price, plan = apply_combos(tuple(temp_list))
-                
+
                 total = price + new_price
                 if total < best_price:
                     best_price = total
                     best_plan = [(f"{'+'.join(group)} 任三件9折", price)] + plan
 
-    # 4. 任兩件 95 折
-    for items in [base_eligible, baguette, puff]:
-        if len(items) >= 2:
-            for group in set(combinations(items, 2)):
-                if "法棍包" in group and "泡芙肩背包" in group: 
-                    continue
+    # 4. 獨立群組：任兩件 95 折
+    for _, group_allowed in MIX_GROUPS:
+        group_pool = []
+        for p, q in cart.items():
+            if p in group_allowed:
+                group_pool += [p] * q
+
+        if len(group_pool) >= 2:
+            for group in set(combinations(group_pool, 2)):
                 temp = cart.copy()
                 valid = True
                 for g in group:
@@ -265,21 +258,21 @@ def apply_combos(cart_tuple):
                         valid = False
                         break
                     temp[g] -= 1
-                if not valid: 
+                if not valid:
                     continue
 
                 group_sum = sum(PRICES[g] for g in group)
                 price = int(round(group_sum * 0.95))
-                
+
                 temp_list = [f"{tk}:{tv}" for tk, tv in temp.items()]
                 new_price, plan = apply_combos(tuple(temp_list))
-                
+
                 total = price + new_price
                 if total < best_price:
                     best_price = total
                     best_plan = [(f"{'+'.join(group)} 任兩件95折", price)] + plan
 
-    # 5. 包款與皮夾搭配折扣
+    # 5. 特定兩件搭配折扣
     for must_items, optional_items, rate in PACKAGE_TWO_ITEM_DISCOUNTS:
         if optional_items is None:
             eligible = []
@@ -350,7 +343,7 @@ def apply_combos(cart_tuple):
 # UI 介面展示
 # -----------------------------
 def main():
-    st.markdown("<h1 style='text-align: center; color: #8C7662;'>🛍️ murfeeli組合優惠計算器</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #8C7662;'>🛍️ murfeeli優惠計算器</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #A08875;'>即時精算全店最優組合優惠價</p>", unsafe_allow_html=True)
     st.write("")
 
